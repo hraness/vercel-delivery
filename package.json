@@ -1,0 +1,72 @@
+{
+  "name": "@hraness/vercel-delivery",
+  "version": "0.1.0",
+  "description": "Fail-closed Vercel delivery proof and Preview response policy for Next.js applications.",
+  "license": "MIT",
+  "type": "module",
+  "sideEffects": false,
+  "packageManager": "bun@1.3.14",
+  "engines": {
+    "node": ">=20.9.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hraness/vercel-delivery.git"
+  },
+  "homepage": "https://github.com/hraness/vercel-delivery#readme",
+  "bugs": {
+    "url": "https://github.com/hraness/vercel-delivery/issues"
+  },
+  "keywords": [
+    "delivery-proof",
+    "nextjs",
+    "preview",
+    "vercel"
+  ],
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "import": "./dist/index.js"
+    },
+    "./next-config": {
+      "types": "./src/index.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "main": "./dist/index.js",
+  "types": "./src/index.ts",
+  "files": [
+    "dist",
+    "src/index.ts",
+    "LICENSE",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "bun run ./scripts/build.ts",
+    "check:portfolio-inventory": "bun run ./scripts/check-portfolio-inventory.ts",
+    "check:public-boundary": "bun run ./scripts/check-public-boundary.ts",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "test": "bun test ./src",
+    "test:package": "bun run ./scripts/package-smoke.ts",
+    "check": "bun run check:portfolio-inventory && bun run check:public-boundary && bun run lint && bun run typecheck && bun run build && bun run test && bun run test:package",
+    "prepack": "bun run check"
+  },
+  "peerDependencies": {
+    "next": ">=16.2.0 <17.0.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.2",
+    "@types/bun": "^1.3.14",
+    "@types/node": "^24.10.0",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "eslint": "^9.39.2",
+    "next": "16.2.12",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.53.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

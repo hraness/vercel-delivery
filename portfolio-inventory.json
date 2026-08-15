@@ -1,0 +1,24 @@
+{
+  "contract": "hraness.portfolio-inventory/v1",
+  "formatVersion": 1,
+  "repository": "hraness/vercel-delivery",
+  "components": [
+    {
+      "kind": "package",
+      "name": "@hraness/vercel-delivery",
+      "path": ".",
+      "visibility": "public",
+      "version": "0.1.0"
+    }
+  ],
+  "dependencies": [],
+  "deployments": [],
+  "brands": [],
+  "publications": [
+    {
+      "component": "@hraness/vercel-delivery",
+      "packageName": "@hraness/vercel-delivery",
+      "repository": "hraness/vercel-delivery"
+    }
+  ]
+}
