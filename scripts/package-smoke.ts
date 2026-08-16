@@ -11,6 +11,8 @@ const verificationPackages = [
   "@types/react@^19.2.14",
   "@types/react-dom@^19.2.3",
   "next@16.2.12",
+  "react@19.2.3",
+  "react-dom@19.2.3",
   "typescript@^6.0.3",
 ];
 
@@ -171,6 +173,32 @@ try {
     [process.execPath, "x", "tsc", "-p", "./tsconfig.nodenext.json"],
     consumer,
   );
+
+  await mkdir(join(consumer, "app"));
+  await writeFile(
+    join(consumer, "next.config.ts"),
+    [
+      'import { withProductionDeliveryProof } from "@hraness/vercel-delivery/next-config";',
+      "export default withProductionDeliveryProof({ output: \"export\" }, {",
+      "  environment: {},",
+      '  projectName: "package-smoke",',
+      "});",
+      "",
+    ].join("\n"),
+  );
+  await writeFile(
+    join(consumer, "app", "layout.js"),
+    "export default function Layout({ children }) { return <html><body>{children}</body></html>; }\n",
+  );
+  await writeFile(
+    join(consumer, "app", "page.js"),
+    "export default function Page() { return <main>Delivery package smoke</main>; }\n",
+  );
+  await run([
+    nodeExecutable,
+    join(consumer, "node_modules", "next", "dist", "bin", "next"),
+    "build",
+  ], consumer);
 } finally {
   await rm(work, { force: true, recursive: true });
 }

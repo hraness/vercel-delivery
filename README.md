@@ -11,7 +11,7 @@ Pin the immutable GitHub release:
 ```json
 {
   "dependencies": {
-    "@hraness/vercel-delivery": "github:hraness/vercel-delivery#v0.1.0"
+    "@hraness/vercel-delivery": "github:hraness/vercel-delivery#v0.1.1"
   }
 }
 ```
@@ -87,7 +87,7 @@ bun install --frozen-lockfile
 bun run check
 ```
 
-The complete check validates the portfolio inventory, lints and typechecks the source, rebuilds the committed distribution, runs behavior tests, packs the release artifact, imports both exports with genuine Node, and typechecks an installed consumer under Bundler and NodeNext resolution.
+The complete check validates the portfolio inventory, lints and typechecks the source, rebuilds the committed distribution, runs behavior tests, packs the release artifact, imports both exports with genuine Node, typechecks an installed consumer under Bundler and NodeNext resolution, and loads the descriptive subpath from a real TypeScript Next config during a production build.
 
 ## License
 

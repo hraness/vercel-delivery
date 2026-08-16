@@ -82,8 +82,16 @@ const manifest = JSON.parse(
   await readFile(join(repositoryRoot, "package.json"), "utf8"),
 ) as { exports?: unknown; peerDependencies?: unknown };
 const expectedExports = {
-  ".": { types: "./src/index.ts", import: "./dist/index.js" },
-  "./next-config": { types: "./src/index.ts", import: "./dist/index.js" },
+  ".": {
+    types: "./src/index.ts",
+    import: "./dist/index.js",
+    default: "./dist/index.js",
+  },
+  "./next-config": {
+    types: "./src/index.ts",
+    import: "./dist/index.js",
+    default: "./dist/index.js",
+  },
 };
 if (JSON.stringify(manifest.exports) !== JSON.stringify(expectedExports)) {
   throw new Error("package exports must expose equivalent root and next-config entries");
