@@ -11,7 +11,7 @@ Pin the immutable GitHub release:
 ```json
 {
   "dependencies": {
-    "@hraness/vercel-delivery": "github:hraness/vercel-delivery#v0.1.1"
+    "@hraness/vercel-delivery": "github:hraness/vercel-delivery#v0.1.2"
   }
 }
 ```
@@ -22,7 +22,7 @@ Then install with Bun:
 bun install
 ```
 
-The package supports Next.js 16.2.x. It runs under Node.js 20.9 or newer.
+The package supports Next.js 16.2.x and 16.3.x. It runs under Node.js 20.9 or newer.
 
 ## Use
 
