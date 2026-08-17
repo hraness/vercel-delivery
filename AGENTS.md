@@ -14,6 +14,7 @@
 - Keep the package product-neutral and safe for a public repository.
 - Follow `WRITING.md` for internal prose and `STYLE.md` for public prose.
 - Apply unreasonably robust programming when agent work is cheap. Model invalid states out of existence, parse deployment and framework values from `unknown`, and pair readable deterministic regressions with property tests for parsers, wrappers, ordering, and round trips.
+- Deliver changes to `main` through a current-head pull request. Keep the stable `Required` CI job green, resolve every review thread, and serialize merges. Human approval stays optional while one regular maintainer would otherwise self-review. Never force-push or bypass the gate.
 - Pin Hraness dependencies to reviewed immutable releases or full commits. Never connect repositories through sibling paths, Git submodules, or coordinated `main` assumptions; upgrade each consumer independently.
 - Extract a shared package only after two concrete consumers require the same stable interface. Keep every shared package product-neutral and free of product imports.
 - Keep this delivery boundary headless and styling-agnostic. Consumer interfaces may layer `@hraness/ui`, optional `@hraness/design-kit`, and product-owned composition without coupling either design package to delivery proof.
