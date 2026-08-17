@@ -38,3 +38,17 @@ jobs:
       - run: bun pm pack --dry-run --ignore-scripts
       - name: Verify both runtime exports with Node
         run: node --input-type=module -e 'await Promise.all(["@hraness/vercel-delivery", "@hraness/vercel-delivery/next-config"].map((specifier) => import(specifier)))'
+
+  required:
+    name: Required
+    if: always()
+    needs: check
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Require every blocking job
+        env:
+          CHECK: ${{ needs.check.result }}
+        run: |
+          set -euo pipefail
+          [[ "$CHECK" == success ]]
