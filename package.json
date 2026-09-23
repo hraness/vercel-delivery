@@ -1,7 +1,7 @@
 {
   "name": "@hraness/vercel-delivery",
   "version": "0.1.2",
-  "description": "Fail-closed Vercel delivery proof and Preview response policy for Next.js applications.",
+  "description": "Tag every response from a Vercel-hosted Next.js app with a header that identifies its deployment and commit, and keep Preview deployments out of search engines.",
   "license": "MIT",
   "type": "module",
   "sideEffects": false,

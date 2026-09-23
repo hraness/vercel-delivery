@@ -1,14 +1,17 @@
 # @hraness/vercel-delivery
 
-Fail-closed Vercel delivery proof and Preview response policy for Next.js
-applications.
+Tag every response from a Vercel-hosted Next.js app with a header that
+identifies the deployment and commit behind it, and keep Preview deployments
+out of search engines.
 
-Wrap one Next.js configuration. Once Vercel exposes any delivery identity, the
-build must present a complete deployment ID, project ID, registered project
-name, and full Git object ID. Preview responses receive the same delivery-proof
-header as production plus a no-index policy and a validated, display-only
-Preview origin. Local Next.js execution stays unchanged when no Vercel identity
-is present.
+Wrap your Next.js config once. On Vercel, every response gets an
+`X-Hraness-Delivery-Proof` header computed from the deployment ID, project ID,
+your registered project name, and the full Git commit SHA, so you can confirm
+which build served a page. Preview deployments also get
+`X-Robots-Tag: noindex, nofollow, noarchive` and a checked Preview URL your
+interface can display. If Vercel supplies only part of that identity, the build
+fails instead of shipping without the header. Local Next.js runs are unchanged
+when no Vercel identity is present.
 
 ## Install
 
@@ -28,7 +31,7 @@ Install with Bun 1.3.14:
 bun install
 ```
 
-## Preview, prove, then promote
+## Check a Preview, then ship to production
 
 ### 1. Wrap the Next.js configuration
 
@@ -99,13 +102,14 @@ NEXT_PUBLIC_HRANESS_VERCEL_PREVIEW_ORIGIN=https://example-web-fix-copy-team.verc
 ```
 
 Your proof changes when the deployment ID, project ID, project name, or Git
-object ID changes. The Preview origin is evidence for a notice in the rendered
-interface. It is not an authorization or routing input.
+object ID changes. The Preview origin exists so your interface can show a
+Preview notice. Do not use it for authorization or routing.
 
 ### 4. Promote through the existing production workflow
 
-Merge or deploy through the Vercel project's configured production path, then
-inspect the production response:
+Promote only after the Preview response contains both the versioned proof and
+the no-index policy. Merge or deploy through the Vercel project's configured
+production path, then inspect the production response:
 
 ```sh
 PRODUCTION_URL=https://example.com
@@ -135,7 +139,8 @@ The activation rule is deliberate. A partial Vercel environment does not fall
 back to local behavior, omit the proof, or emit a weaker header.
 
 If the provider suppresses `VERCEL` and every deployment identity field, the
-package cannot distinguish that build from the inert local path. Enabling
+package cannot tell that build apart from a local build, where the wrapper does
+nothing. Enabling
 Vercel's system environment variables is therefore part of the delivery
 contract, not an optional convenience. The package makes no provider request
 that could infer the missing state.
@@ -181,20 +186,20 @@ deployment.
 | `is owned by the Vercel Preview notice wrapper` | `nextConfig.env` already sets the display-only Preview origin to another value. | Remove the manual assignment and consume the value issued by the wrapper. |
 | `may only be issued by a trusted Vercel build wrapper` | Application config sets the trusted surface-origin variable directly. | Remove it. This package intentionally has no authority to issue that value. |
 | No proof header on a Vercel deployment | The wrapper was not loaded, or Vercel exposed none of its build markers. | Confirm the exported config is wrapped, enable system environment variables, and redeploy. |
-| No header during ordinary local development | No Vercel identity is present. | Treat this as the expected inert path. Inject a complete fake `environment` only in a deterministic test if proof behavior needs local coverage. |
+| No header during ordinary local development | No Vercel identity is present. | This is expected; the wrapper does nothing locally. Inject a complete fake `environment` only in a deterministic test if proof behavior needs local coverage. |
 
 If a corrected provider setting must take effect, Vercel requires a new
 deployment. See
 [Managing environment variables](https://vercel.com/docs/environment-variables/managing-environment-variables)
 for the provider's redeployment rule.
 
-## Authority boundary
+## What the package controls
 
 | Surface | Authority and limit |
 | --- | --- |
 | Vercel system variables | Provider-owned build inputs. The package parses them but does not fetch or authenticate them. |
 | `projectName` | Caller-owned input. The package validates its shape but cannot verify the Vercel registration. |
-| `X-Hraness-Delivery-Proof` | Public deterministic receipt for one complete identity tuple. Verify it against independently known deployment facts when assurance matters. |
+| `X-Hraness-Delivery-Proof` | A public SHA-256 digest of the four identity values. Anyone who knows them can compute it, so when it matters, compare it with deployment facts you know from another source. |
 | `NEXT_PUBLIC_HRANESS_VERCEL_PREVIEW_ORIGIN` | UI evidence for a Preview notice. Never use it for authentication, access control, routing, fetch authority, or server policy. |
 | `NEXT_PUBLIC_HRANESS_VERCEL_SURFACE_ORIGIN` | Reserved for a separate trusted Vercel build wrapper. This package rejects direct assignment and never issues it. |
 | Existing Next.js headers | Application-owned. The wrapper awaits and preserves them before appending one catch-all policy. |
@@ -210,7 +215,7 @@ Both package entry points expose the same runtime and type surface:
 | --- | --- |
 | `withProductionDeliveryProof(nextConfig, options)` | Wrap an object, synchronous function, or asynchronous Next.js config. This is the normal application entry point. |
 | `productionDeliveryProofToken(identity)` | Validate one explicit identity and return its deterministic `v1.<digest>` token. |
-| `resolveProductionDeliveryProof(options)` | Return the current environment's token, return `null` for the inert local path, or throw on an active incomplete identity. |
+| `resolveProductionDeliveryProof(options)` | Return the current environment's token, return `null` for a local build with no Vercel identity, or throw on an active incomplete identity. |
 | `resolveVercelPreviewNoticeOrigin(environment)` | Return the validated `https://...vercel.app` Preview origin, return `null` outside Preview, or throw on an invalid Preview hostname. |
 | `PRODUCTION_DELIVERY_PROOF_HEADER` | `X-Hraness-Delivery-Proof`. |
 | `PREVIEW_ROBOTS_HEADER` and `PREVIEW_ROBOTS_POLICY` | `X-Robots-Tag` and `noindex, nofollow, noarchive`. |
@@ -253,7 +258,7 @@ The result retains the application header rule and appends a separate
 | Next.js peer range | `>=16.2.0 <17.0.0`. |
 | Installed-package build fixtures | Next.js `16.2.12` and `16.3.0`. |
 | Runtime | Node.js `20.9.0` or newer. |
-| Release verification | Genuine Node 24 and Bun `1.3.14`. |
+| Release verification | Node.js 24 itself (not Bun) and Bun `1.3.14`. |
 | Modules | ESM package with equivalent root and `./next-config` exports. |
 | TypeScript consumers | Verified under Bundler and NodeNext module resolution. |
 | Next config forms | Object, synchronous function, and asynchronous function. |
@@ -277,7 +282,7 @@ authorization.
 
 ### Why does local Next.js run without a proof header?
 
-The no-identity path is intentionally inert. This keeps ordinary local builds
+With no Vercel identity, the wrapper does nothing. This keeps ordinary local builds
 independent from Vercel while preventing a partial Vercel build from silently
 behaving like local development.
 
@@ -292,12 +297,6 @@ display evidence does not infer or authorize them.
 No. The wrapper awaits the application's existing `headers()` function,
 preserves its rules, and appends a separate catch-all rule.
 
-## Next action
-
-Pin `v0.1.2`, wrap `next.config.ts`, enable Vercel's system environment
-variables, and inspect one generated Preview response. Promote only after the
-Preview contains both the versioned proof and the no-index policy.
-
 ## Development
 
 Use Bun 1.3.14 and Node 24:
@@ -309,8 +308,8 @@ bun run check
 
 The complete check validates the public boundary and portfolio inventory,
 lints and typechecks the source, rebuilds the committed distribution, runs
-behavior tests, packs the release artifact, imports both exports with genuine
-Node, typechecks installed consumers under Bundler and NodeNext resolution, and
+behavior tests, packs the release artifact, imports both exports with Node.js
+itself (not Bun), typechecks installed consumers under Bundler and NodeNext resolution, and
 loads the descriptive subpath from real TypeScript Next configs on Next.js
 16.2.12 and 16.3.0.
 

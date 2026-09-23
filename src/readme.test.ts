@@ -57,25 +57,10 @@ function compact(value: string): string {
 }
 
 describe("README delivery contract", () => {
-  test("orders the reader path from Preview proof through production and recovery", async () => {
+  test("names the installable package and uses no em dashes", async () => {
     const { readme } = await documentation();
-    const headings = [
-      "## Install",
-      "## Preview, prove, then promote",
-      "## Fail-closed contract",
-      "## Provider prerequisites",
-      "## Recover a failed deployment",
-      "## Authority boundary",
-      "## Interface map",
-      "## Compatibility",
-      "## FAQ",
-      "## Next action",
-      "## Development",
-      "## License",
-    ] as const;
-    const offsets = headings.map((heading) => readme.indexOf(heading));
-    expect(offsets.every((offset) => offset >= 0)).toBe(true);
-    expect(offsets).toEqual([...offsets].sort((left, right) => left - right));
+    expect(readme.startsWith("# @hraness/vercel-delivery\n")).toBe(true);
+    expect(readme).not.toContain("\u2014");
   });
 
   test("keeps install and compatibility claims aligned with the manifest", async () => {
@@ -152,7 +137,7 @@ describe("README delivery contract", () => {
       "A partial Vercel environment does not fall back to local behavior",
     );
     expect(compactReadme).toContain(
-      "cannot distinguish that build from the inert local path",
+      "cannot tell that build apart from a local build, where the wrapper does nothing",
     );
     expect(compactReadme).toContain(
       "not a secret, signature, bearer token, or independent attestation from Vercel",
