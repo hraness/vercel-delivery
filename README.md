@@ -13,6 +13,11 @@ interface can display. If Vercel supplies only part of that identity, the build
 fails instead of shipping without the header. Local Next.js runs are unchanged
 when no Vercel identity is present.
 
+Vercel already adds `X-Robots-Tag: noindex` to Preview deployments, but it
+[omits that header when a branch has a custom domain](https://vercel.com/kb/guide/are-vercel-preview-deployment-indexed-by-search-engines).
+This package adds its header to every response from a Preview build, whichever
+domain serves it.
+
 ## Install
 
 Pin the immutable `v0.1.2` GitHub release:
@@ -319,3 +324,5 @@ Read [Security](SECURITY.md) for reporting and authority boundaries and
 ## License
 
 MIT
+
+Maintained by [Hraness](https://hraness.com).
