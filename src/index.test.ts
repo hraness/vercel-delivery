@@ -106,7 +106,7 @@ describe("production delivery proof", () => {
     ]);
   });
 
-  test("adds a no-index policy to every Vercel Preview response", async () => {
+  test("adds a no-index policy to every Vercel Preview response on any host", async () => {
     const config = withProductionDeliveryProof({}, {
       environment: {
         VERCEL: "1",
@@ -129,6 +129,9 @@ describe("production delivery proof", () => {
       ],
       source: "/:path*",
     }]);
+    const [rule] = await config.headers?.() ?? [];
+    expect(rule).not.toHaveProperty("has");
+    expect(rule).not.toHaveProperty("missing");
     expect(config.env).toEqual({
       [PREVIEW_NOTICE_ORIGIN_ENV]: `https://${previewHostname}`,
     });
