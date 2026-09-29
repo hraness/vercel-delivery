@@ -8,6 +8,7 @@ updates:
     groups:
       github-actions:
         patterns: ["*"]
+        update-types: [minor, patch]
   - package-ecosystem: bun
     directory: /
     schedule:
@@ -16,3 +17,4 @@ updates:
     groups:
       bun:
         patterns: ["*"]
+        update-types: [minor, patch]
