@@ -10,7 +10,7 @@
 - `src/index.ts` defines the delivery-proof token, Preview-origin validation, and Next.js config wrapper.
 - `src/index.test.ts` holds deterministic behavior and fail-closed regression tests.
 - `scripts/` contains build, inventory, public-boundary, and installed-package checks.
-- `.github/workflows/` runs read-only continuous integration and publishes an immutable release only after tag verification succeeds.
+- `.github/workflows/` runs read-only continuous integration and publishes an immutable release only after tag verification succeeds. Merging a `package.json` version bump to `main` creates its annotated `v<version>` tag through the `hraness-release-tagger` GitHub App once CI passes (`auto-tag.yml`); pushing the tag by hand still works. `scripts/workflow-write-boundary.ts` allows that App token input as the only write grant outside `release.yml`.
 - `.agents/skills/` contains portable cross-repository KB and phased-execution workflows.
 - `kb/` contains authored repository rationale, maintained synthesis, and implementation plans.
 - `WRITING.md` and `STYLE.md` define the internal and public prose contracts.

@@ -1,18 +1,13 @@
 import { createHash } from "node:crypto";
 import { readdir, readFile } from "node:fs/promises";
 import { extname, join, relative, resolve } from "node:path";
+import { workflowWriteViolation } from "./workflow-write-boundary.js";
 
 const repositoryRoot = resolve(import.meta.dir, "..");
 const ignoredDirectories = new Set([".git", "dist", "node_modules"]);
 const textExtensions = new Set([
   "", ".json", ".md", ".mjs", ".ts", ".yml", ".yaml",
 ]);
-const writeCapabilities = [
-  ["packages", "write"].join(": "),
-  ["id-token", "write"].join(": "),
-  ["pull-requests", "write"].join(": "),
-  ["npm", "publish"].join(" "),
-];
 const privateIdentityDigest = "91ed2ef15eee7102873d33d852cae9a195eff25e758269de6457723b1d8dc29a";
 
 async function files(directory: string): Promise<string[]> {
@@ -43,19 +38,8 @@ for (const path of await files(repositoryRoot)) {
     }
   }
   if (path.includes(`${join(".github", "workflows")}${String.raw`/`}`)) {
-    for (const capability of writeCapabilities) {
-      if (contents.includes(capability)) {
-        throw new Error(
-          `${relative(repositoryRoot, path)} contains mutating release capability ${capability}`,
-        );
-      }
-    }
-    if (
-      contents.includes(["contents", "write"].join(": "))
-      && relative(repositoryRoot, path) !== ".github/workflows/release.yml"
-    ) {
-      throw new Error(`${relative(repositoryRoot, path)} has unexpected contents write access`);
-    }
+    const violation = workflowWriteViolation(relative(repositoryRoot, path), contents);
+    if (violation !== undefined) throw new Error(violation);
   }
 }
 
