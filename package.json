@@ -54,7 +54,7 @@
     "check:public-boundary": "bun run ./scripts/check-public-boundary.ts",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
-    "test": "bun test ./src",
+    "test": "bun test ./src ./scripts",
     "test:package": "bun run ./scripts/package-smoke.ts",
     "check": "bun run check:portfolio-inventory && bun run check:public-boundary && bun run lint && bun run typecheck && bun run build && bun run test && bun run test:package",
     "prepack": "bun run check"
