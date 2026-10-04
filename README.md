@@ -18,6 +18,8 @@ Vercel already adds `X-Robots-Tag: noindex` to Preview deployments, but it
 This package adds its header to every response from a Preview build, whichever
 domain serves it.
 
+Start with [the Next.js configuration example](#check-a-preview-then-ship-to-production) to add the wrapper. If a build fails, use [the recovery table](#recover-a-failed-deployment) instead of substituting provider identifiers. For custom build tooling, use [the interface map](#interface-map) and [function configuration example](#function-configurations).
+
 ## Install
 
 Pin the immutable `v0.1.2` GitHub release:
