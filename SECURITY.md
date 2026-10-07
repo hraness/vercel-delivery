@@ -1,6 +1,6 @@
 # Security
 
-Report vulnerabilities privately through the repository's GitHub security advisory page. Do not open a public issue for an undisclosed vulnerability.
+Report vulnerabilities privately through the repository's GitHub security advisory page. If GitHub reporting is unavailable, email [hraness@pm.me](mailto:hraness@pm.me). Do not open a public issue for an undisclosed vulnerability.
 
 The delivery-proof token is deterministic public deployment metadata, not a secret, signature, or authentication credential. Preview-origin environment values are display evidence only. Applications must make authorization and routing decisions from trusted server-side state.
 
