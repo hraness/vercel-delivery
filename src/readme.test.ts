@@ -142,7 +142,9 @@ describe("README delivery contract", () => {
     expect(compactReadme).toContain(
       "not a secret, signature, bearer token, or independent attestation from Vercel",
     );
-    expect(readme).toContain("The package needs no Vercel API token");
+    expect(readme).toContain("The Next.js wrapper needs no Vercel API token");
+    expect(readme).toContain("completeVercelDeploymentCheck(options)");
+    expect(readme).toContain("@hraness/vercel-delivery/check-runs");
     expect(readme).toContain("## Recover a failed deployment");
   });
 });
