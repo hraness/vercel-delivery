@@ -3,7 +3,7 @@ import { rm } from "node:fs/promises";
 await rm("./dist", { force: true, recursive: true });
 
 const result = await Bun.build({
-  entrypoints: ["./src/index.ts"],
+  entrypoints: ["./src/index.ts", "./src/check-runs.ts"],
   external: ["next"],
   format: "esm",
   minify: true,

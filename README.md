@@ -1,8 +1,9 @@
 # @hraness/vercel-delivery
 
-Tag every response from a Vercel-hosted Next.js app with a header that
-identifies the deployment and commit behind it, and keep Preview deployments
-out of search engines.
+Identify Vercel responses and complete an integration check run for one
+verified deployment. The Next.js wrapper adds deployment and commit headers
+and keeps Preview deployments out of search engines. The separate Node.js
+check-run helper supports other build tools without installing Next.js.
 
 Wrap your Next.js config once. On Vercel, every response gets an
 `X-Hraness-Delivery-Proof` header computed from the deployment ID, project ID,
@@ -18,16 +19,16 @@ Vercel already adds `X-Robots-Tag: noindex` to Preview deployments, but it
 This package adds its header to every response from a Preview build, whichever
 domain serves it.
 
-Start with [the Next.js configuration example](#check-a-preview-then-ship-to-production) to add the wrapper. If a build fails, use [the recovery table](#recover-a-failed-deployment) instead of substituting provider identifiers. For custom build tooling, use [the interface map](#interface-map) and [function configuration example](#function-configurations).
+Start with [the Next.js configuration example](#check-a-preview-then-ship-to-production) to add response headers, or [complete a deployment check](#complete-one-deployment-check) from an existing verification workflow. If a wrapper build fails, use [the recovery table](#recover-a-failed-deployment) instead of substituting provider identifiers.
 
 ## Install
 
-Pin the immutable `v0.1.2` GitHub release:
+Pin the immutable `v0.2.0` GitHub release:
 
 ```json
 {
   "dependencies": {
-    "@hraness/vercel-delivery": "github:hraness/vercel-delivery#v0.1.2"
+    "@hraness/vercel-delivery": "github:hraness/vercel-delivery#v0.2.0"
   }
 }
 ```
@@ -37,6 +38,9 @@ Install with Bun 1.3.14:
 ```sh
 bun install
 ```
+
+Next.js is required only for the configuration wrapper. Node.js tools can import
+`@hraness/vercel-delivery/check-runs` without Next.js or another runtime dependency.
 
 ## Check a Preview, then ship to production
 
@@ -125,7 +129,7 @@ curl --silent --show-error --head "$PRODUCTION_URL"
 
 The package adds `X-Hraness-Delivery-Proof` to production. It adds the robots
 policy only when `VERCEL_ENV=preview`; any other robots header remains owned by
-the application. The package does not create, promote, roll back, or route a
+the application. The wrapper does not create, promote, roll back, or route a
 Vercel deployment.
 
 ## Fail-closed contract
@@ -174,8 +178,99 @@ Do not copy provider identifiers into `next.config.ts`. Let the wrapper read
 for deterministic tests and trusted adapters that already own an equivalent
 input boundary.
 
-The package needs no Vercel API token and performs no provider API or network
-request.
+The Next.js wrapper needs no Vercel API token and performs no provider API or
+network request. The check-run helper below uses a selected integration
+installation's credential only when called.
+
+## Complete one deployment check
+
+Use this helper after your workflow has verified a staged production deployment.
+It updates the check run identified by both deployment ID and check-run ID.
+A commit status cannot distinguish two deployments built from the same commit.
+
+Before calling it:
+
+- Install a private Vercel integration on only the required projects. Grant
+  Deployment read and Deployment Checks read/write. Keep its installation token
+  in the calling workflow's secret store; do not substitute a personal token.
+- Configure its production check with `requires: deployment-url`,
+  `blocks: deployment-alias`, `targets: [production]` and
+  `isRerequestable: false`. Record the integration, installation and check IDs
+  in the caller's reviewed configuration.
+- Authenticate the provider event and bind its team, project, generated HTTPS
+  origin, deployment ID and GitHub source. The helper requires the deployment's
+  `gitSource` to contain `type: github`, repository ID, full SHA and ref.
+  Git metadata attached to a manual CLI deployment is insufficient.
+- Verify your source, static bytes, browser behavior and other product checks.
+  Derive each boolean from the completed check's result. Keep the required
+  check names in the caller's configuration, separate from the event or result.
+- Serialize the sole integration writer by deployment and check-run ID.
+  Vercel's PATCH API has no documented conditional revision. The helper rereads
+  before writing and refuses observed conflicts; it cannot make that sequence
+  an atomic lock.
+
+The adapter supplies this typed call:
+
+```ts
+import {
+  completeVercelDeploymentCheck,
+  type VercelDeploymentCheckCompletion,
+  type VercelDeploymentCheckIdentity,
+} from "@hraness/vercel-delivery/check-runs";
+
+export async function finishVerifiedDeployment(
+  identity: VercelDeploymentCheckIdentity,
+  completion: VercelDeploymentCheckCompletion,
+  installationToken: string,
+  readCurrentSource: () => Promise<unknown>,
+) {
+  return completeVercelDeploymentCheck({
+    identity,
+    completion,
+    token: installationToken,
+    readCurrentSource,
+  });
+}
+```
+
+`identity` contains `teamId`, `projectId`, `deploymentId`, `origin`,
+`integrationId`, `configurationId`, `checkId`, `checkRunId`, `checkName` and
+`requiredChecks`. Its `git` object contains GitHub `owner`, `ownerId`,
+`repository`, `repositoryId`, `ref` and `sha`. The integration IDs identify the
+check's source; the team and project identify its owner.
+
+`completion` contains the same `deploymentId` and `origin`, the Git SHA as
+`sourceSha`, the workflow's `jobStatus`, and a `checks` map from names to booleans.
+Only literal `jobStatus: "success"` with every configured check `true` can produce
+`succeeded`. An omitted completion, cancellation, timeout, skipped job or missing
+check produces `failed`. A borrowed deployment or source result is refused.
+Completing a blocking check can let Vercel assign production domains, so derive
+success only from the workflow's verified candidate.
+
+`readCurrentSource` must reread the authoritative protected GitHub branch and
+return the same six `git` fields plus `protected: true`. Its caller must also
+enforce the repository's current-source validation policy. The helper invokes
+it before completion and after readback. It never uses Vercel metadata as a
+fallback for a missing current GitHub source.
+
+The helper uses only `https://api.vercel.com`, refuses redirects and bounds each
+response to 1 MiB and each API request to 15 seconds. It reads the deployment,
+check definition and specific run before sending at most one PATCH. It then
+reads back that run up to three times. A lost response never causes another
+PATCH or a success claim without matching readback. A matching completed result
+is an unchanged no-op; a contradictory terminal result is never overwritten.
+The returned receipt identifies the deployment, run, source, conclusion and
+deterministic completion ID. This does not replace verification of the public
+production site after promotion.
+
+Errors expose a fixed code, operation stage and optional HTTP status through
+`VercelDeploymentCheckError`; they omit tokens and provider response bodies.
+The helper does not mint credentials. Token provenance remains the caller's
+installation-secret boundary, with known `vcp_` personal tokens rejected.
+
+Primary contracts: [Vercel REST API schema](https://openapi.vercel.sh),
+[integration permissions and project access](https://vercel.com/docs/integrations/install-an-integration/manage-integrations-reference)
+and [deployment checks](https://vercel.com/docs/deployment-checks).
 
 ## Recover a failed deployment
 
@@ -213,10 +308,13 @@ for the provider's redeployment rule.
 
 ## Interface map
 
-Both package entry points expose the same runtime and type surface:
+The root and Next.js entry points expose the same runtime and type surface:
 
 - `@hraness/vercel-delivery`
 - `@hraness/vercel-delivery/next-config`
+
+The dependency-free `@hraness/vercel-delivery/check-runs` entry exposes only the
+check-run helper, its error class and their types. It does not import Next.js.
 
 | Export | Purpose |
 | --- | --- |
@@ -230,6 +328,9 @@ Both package entry points expose the same runtime and type surface:
 | `TRUSTED_PREVIEW_SURFACE_ORIGIN_ENV` | The reserved trusted-wrapper key that application config may not assign. |
 | `ProductionDeliveryProofIdentity`, `ProductionDeliveryProofEnvironment`, and `ProductionDeliveryProofOptions` | Readonly input contracts. |
 | `NextConfigFunction` and `NextConfigExport` | Supported object and function config shapes. |
+| `completeVercelDeploymentCheck(options)` | Verify one staged Git deployment and complete only its integration-backed check run. |
+| `VercelDeploymentCheckError` | Fixed error code, stage and optional HTTP status. |
+| `VercelCheckGitSource`, `VercelDeploymentCheckIdentity`, `VercelDeploymentCheckCompletion`, `VercelDeploymentCheckOptions`, `VercelDeploymentCheckReceipt` | Source, caller configuration, result and completion types. |
 
 ### Function configurations
 
@@ -261,12 +362,12 @@ The result retains the application header rule and appends a separate
 
 | Contract | Supported or verified boundary |
 | --- | --- |
-| Current release | Immutable GitHub tag `v0.1.2`. |
-| Next.js peer range | `>=16.2.0 <17.0.0`. |
+| Current release | Immutable GitHub tag `v0.2.0`. |
+| Next.js peer range | `>=16.2.0 <17.0.0`, required for the wrapper and optional for the check-run helper. |
 | Installed-package build fixtures | Next.js `16.2.12` and `16.3.0`. |
 | Runtime | Node.js `20.9.0` or newer. |
 | Release verification | Node.js 24 itself (not Bun) and Bun `1.3.14`. |
-| Modules | ESM package with equivalent root and `./next-config` exports. |
+| Modules | ESM package with equivalent root and `./next-config` exports, plus independent `./check-runs`. |
 | TypeScript consumers | Verified under Bundler and NodeNext module resolution. |
 | Next config forms | Object, synchronous function, and asynchronous function. |
 
@@ -277,9 +378,10 @@ the installed-consumer builds exercised by the current package smoke test.
 
 ### Does the package deploy to Vercel?
 
-No. It wraps Next.js configuration during a build. Your Git integration,
+No. The wrapper configures Next.js response headers during a build. Your Git integration,
 Vercel dashboard, CLI, or existing delivery system owns deployment and
-promotion.
+promotion. The check-run helper can release a configured deployment blocker
+after verification, but does not create deployments or assign domains itself.
 
 ### Can the delivery-proof header authenticate a request?
 

@@ -2,6 +2,16 @@ import { createHash } from "node:crypto";
 
 import type { NextConfig } from "next";
 
+export {
+  completeVercelDeploymentCheck,
+  VercelDeploymentCheckError,
+  type VercelCheckGitSource,
+  type VercelDeploymentCheckCompletion,
+  type VercelDeploymentCheckIdentity,
+  type VercelDeploymentCheckOptions,
+  type VercelDeploymentCheckReceipt,
+} from "./check-runs.js";
+
 const deploymentIdPattern = /^dpl_[A-Za-z0-9]+$/u;
 const objectIdPattern = /^(?:[0-9a-f]{40}|[0-9a-f]{64})$/u;
 const projectIdPattern = /^prj_[A-Za-z0-9]+$/u;

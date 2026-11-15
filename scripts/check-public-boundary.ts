@@ -76,9 +76,14 @@ const expectedExports = {
     import: "./dist/index.js",
     default: "./dist/index.js",
   },
+  "./check-runs": {
+    types: "./src/check-runs.ts",
+    import: "./dist/check-runs.js",
+    default: "./dist/check-runs.js",
+  },
 };
 if (JSON.stringify(manifest.exports) !== JSON.stringify(expectedExports)) {
-  throw new Error("package exports must expose equivalent root and next-config entries");
+  throw new Error("package exports must preserve root/next-config parity and the independent check-runs entry");
 }
 if (JSON.stringify(manifest.peerDependencies) !== JSON.stringify({
   next: ">=16.2.0 <17.0.0",

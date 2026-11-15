@@ -8,6 +8,10 @@ const importSpecifiers = [
   `${packageName}/next-config`,
 ];
 const verifiedNextVersions = ["16.2.12", "16.3.0"] as const;
+const checkRunsOnly = process.argv.slice(2).includes("--check-runs-only");
+if (process.argv.slice(2).some(argument => argument !== "--check-runs-only") || process.argv.length > 3) {
+  throw new Error("Use only --check-runs-only for the independent Node fixture.");
+}
 const verificationPackages = [
   "@types/node@^24.10.0",
   "@types/react@^19.2.14",
@@ -103,7 +107,39 @@ try {
     types: ["node"],
   };
 
-  for (const nextVersion of verifiedNextVersions) {
+  const nodeConsumer = join(work, "consumer-without-next");
+  await mkdir(nodeConsumer);
+  await writeFile(join(nodeConsumer, "package.json"), JSON.stringify({ private: true, type: "module" }));
+  await run([
+    process.execPath, "add", archive, "@types/node@^24.10.0", "typescript@^6.0.3", "--ignore-scripts",
+  ], nodeConsumer);
+  if (await Bun.file(join(nodeConsumer, "node_modules", "next", "package.json")).exists()) {
+    throw new Error("the independent check-run consumer must not install Next.js");
+  }
+  await run([
+    nodeExecutable, "--input-type=module", "-e",
+    [
+      'import assert from "node:assert/strict";',
+      'globalThis.fetch = () => { throw new Error("imports must not call a provider"); };',
+      `const [root, next, checks] = await Promise.all(${JSON.stringify([...importSpecifiers, `${packageName}/check-runs`])}.map(value => import(value)));`,
+      "assert.deepEqual(Object.keys(root).sort(), Object.keys(next).sort());",
+      'assert.equal(typeof checks.completeVercelDeploymentCheck, "function");',
+      "await assert.rejects(checks.completeVercelDeploymentCheck({ identity: {}, token: 'not-a-credential' }), checks.VercelDeploymentCheckError);",
+    ].join("\n"),
+  ], nodeConsumer);
+  await writeFile(join(nodeConsumer, "index.ts"), [
+    `import { completeVercelDeploymentCheck, type VercelDeploymentCheckOptions } from "${packageName}/check-runs";`,
+    "export function finish(options: VercelDeploymentCheckOptions) { return completeVercelDeploymentCheck(options); }",
+    "",
+  ].join("\n"));
+  for (const [name, module, moduleResolution] of [["bundler", "Preserve", "Bundler"], ["nodenext", "NodeNext", "NodeNext"]] as const) {
+    await writeFile(join(nodeConsumer, `tsconfig.${name}.json`), JSON.stringify({
+      compilerOptions: { ...sharedCompilerOptions, module, moduleResolution }, include: ["index.ts"],
+    }));
+    await run([process.execPath, "x", "tsc", "-p", `tsconfig.${name}.json`], nodeConsumer);
+  }
+
+  for (const nextVersion of checkRunsOnly ? [] : verifiedNextVersions) {
     const consumer = join(work, `consumer-next-${nextVersion}`);
     await mkdir(consumer);
     await writeFile(
