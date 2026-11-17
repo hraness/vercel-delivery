@@ -304,7 +304,6 @@ describe("deployment-specific integration completion", () => {
     }
     const omittedStatus = fixture();
     const { jobStatus: _jobStatus, ...incomplete } = completion;
-    void _jobStatus;
     expect(
       (
         await completeVercelDeploymentCheck({
@@ -315,7 +314,6 @@ describe("deployment-specific integration completion", () => {
     ).toBe("failed");
     const missing = fixture();
     const { completion: _completion, ...options } = missing.options;
-    void _completion;
     expect((await completeVercelDeploymentCheck(options)).conclusion).toBe(
       "failed",
     );

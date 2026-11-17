@@ -19,6 +19,8 @@ export default tseslint.config(
       "@typescript-eslint/consistent-type-imports": "error",
       "@typescript-eslint/no-non-null-assertion": "error",
       "@typescript-eslint/only-throw-error": "error",
+      // A rest destructure is how tests omit a field; the omitted binding is unused.
+      "@typescript-eslint/no-unused-vars": ["error", { ignoreRestSiblings: true }],
     },
   },
 );
